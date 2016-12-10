@@ -3,6 +3,7 @@ package scalashop
 import org.scalameter._
 import common._
 
+
 object VerticalBoxBlurRunner {
 
   val standardConfig = config(
@@ -33,6 +34,7 @@ object VerticalBoxBlurRunner {
 
 }
 
+
 /** A simple, trivially parallelizable computation. */
 object VerticalBoxBlur {
 
@@ -43,8 +45,12 @@ object VerticalBoxBlur {
    *  bottom.
    */
   def blur(src: Img, dst: Img, from: Int, end: Int, radius: Int): Unit = {
-    // TODO implement this method using the `boxBlurKernel` method
-    ???
+    for {
+      x <- from until end
+      y <- 0 until src.height
+    } yield {
+      dst.update(x, y, boxBlurKernel(src, x, y, radius))
+    }
   }
 
   /** Blurs the columns of the source image in parallel using `numTasks` tasks.
@@ -54,8 +60,13 @@ object VerticalBoxBlur {
    *  columns.
    */
   def parBlur(src: Img, dst: Img, numTasks: Int, radius: Int): Unit = {
-    // TODO implement using the `task` construct and the `blur` method
-    ???
+    val step = (src.width.toDouble / numTasks).ceil.toInt
+    val tasks = for {
+      xStart <- 0 until src.width by step
+    } yield task {
+      blur(src, dst, xStart, math.min(xStart + step, src.width), radius)
+    }
+    tasks.foreach(_.join)
   }
 
 }

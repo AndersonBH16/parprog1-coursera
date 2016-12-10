@@ -3,6 +3,7 @@ package scalashop
 import org.scalameter._
 import common._
 
+
 object HorizontalBoxBlurRunner {
 
   val standardConfig = config(
@@ -30,6 +31,7 @@ object HorizontalBoxBlurRunner {
     println(s"fork/join blur time: $partime ms")
     println(s"speedup: ${seqtime / partime}")
   }
+
 }
 
 
@@ -42,9 +44,12 @@ object HorizontalBoxBlur {
    *  Within each row, `blur` traverses the pixels by going from left to right.
    */
   def blur(src: Img, dst: Img, from: Int, end: Int, radius: Int): Unit = {
-  // TODO implement this method using the `boxBlurKernel` method
-
-  ???
+    for {
+      y <- from until end
+      x <- 0 until src.width
+    } yield {
+      dst.update(x, y, boxBlurKernel(src, x, y, radius))
+    }
   }
 
   /** Blurs the rows of the source image in parallel using `numTasks` tasks.
@@ -54,9 +59,13 @@ object HorizontalBoxBlur {
    *  rows.
    */
   def parBlur(src: Img, dst: Img, numTasks: Int, radius: Int): Unit = {
-  // TODO implement using the `task` construct and the `blur` method
-
-  ???
+    val step = (src.width.toDouble / numTasks).ceil.toInt
+    val tasks = for {
+      yStart <- 0 until src.height by step
+    } yield task {
+      blur(src, dst, yStart, math.min(yStart + step, src.height), radius)
+    }
+    tasks.foreach(_.join)
   }
 
 }
